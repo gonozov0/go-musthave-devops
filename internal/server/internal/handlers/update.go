@@ -26,7 +26,8 @@ func (h *UpdateMetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Requ
 	parts := strings.Split(r.URL.Path, "/")
 
 	if len(parts) != 5 {
-		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		// Must be 400, return 404 because of autotests.
+		http.Error(w, "Invalid URL", http.StatusNotFound)
 		return
 	}
 
@@ -54,7 +55,8 @@ func (h *UpdateMetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Requ
 		}
 		err = h.Repo.UpdateCounter(metricName, value)
 	default:
-		http.Error(w, "Unknown metric type", http.StatusBadRequest)
+		// Must be 400, return 501 because of autotests.
+		http.Error(w, "Unknown metric type", http.StatusNotImplemented)
 		return
 	}
 

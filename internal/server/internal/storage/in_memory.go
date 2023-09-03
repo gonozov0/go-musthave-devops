@@ -4,14 +4,14 @@ import "sync"
 
 // InMemoryRepository is an in-memory implementation of the Repository interface.
 type InMemoryRepository struct {
-	gaugeMu   sync.Mutex
-	counterMu sync.Mutex
+	gaugeMu   sync.RWMutex
+	counterMu sync.RWMutex
 	gauges    map[string]float64
 	counters  map[string]int64
 }
 
 // NewInMemoryRepository creates a new InMemoryRepository and returns it as a Repository interface.
-func NewInMemoryRepository() Repository {
+func NewInMemoryRepository() *InMemoryRepository {
 	return &InMemoryRepository{
 		gauges:   make(map[string]float64),
 		counters: make(map[string]int64),
@@ -32,4 +32,18 @@ func (repo *InMemoryRepository) UpdateCounter(metricName string, value int64) er
 	defer repo.counterMu.Unlock()
 	repo.counters[metricName] += value
 	return nil
+}
+
+// GetGauges returns all gauge metrics.
+func (repo *InMemoryRepository) GetGauges() (map[string]float64, error) {
+	repo.gaugeMu.RLock()
+	defer repo.gaugeMu.RUnlock()
+	return repo.gauges, nil
+}
+
+// GetCounters returns all counter metrics.
+func (repo *InMemoryRepository) GetCounters() (map[string]int64, error) {
+	repo.counterMu.RLock()
+	defer repo.counterMu.RUnlock()
+	return repo.counters, nil
 }

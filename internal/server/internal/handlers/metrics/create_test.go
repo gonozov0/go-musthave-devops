@@ -1,7 +1,8 @@
-package handlers
+package metrics
 
 import (
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,43 +21,45 @@ func TestUpdateMetricsHandler(t *testing.T) {
 	}{
 		{
 			name:       "Test gauge",
-			method:     "gauge",
+			method:     Gauge,
 			value:      42.0,
 			expectCode: http.StatusOK,
 		},
 		{
 			name:       "Test counter",
-			method:     "counter",
+			method:     Counter,
 			value:      int64(42),
 			expectCode: http.StatusOK,
 		},
 	}
 
 	repo := storage.NewInMemoryRepository()
-	handler := NewUpdateMetricsHandler(repo)
+	handler := NewHandler(repo)
+
+	r := chi.NewRouter()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			url := fmt.Sprintf("/update/%s/TestMetric/%v", tt.method, tt.value)
+			metricName := "TestMetric"
+			url := fmt.Sprintf("/update/%s/%s/%v", tt.method, metricName, tt.value)
 			req, err := http.NewRequest("POST", url, nil)
 			assert.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler.UpdateMetrics(rr, req)
+			r.Post("/update/{metricType}/{metricName}/{value}", handler.CreateMetric)
+			r.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectCode, rr.Code)
 
 			switch tt.method {
-			case "gauge":
-				gauges, err := repo.GetGauges()
+			case Gauge:
+				gauge, err := repo.GetGauge(metricName)
 				assert.NoError(t, err)
-				assert.Equal(t, 1, len(gauges))
-				assert.Equal(t, tt.value, gauges["TestMetric"])
-			case "counter":
-				counters, err := repo.GetCounters()
+				assert.Equal(t, tt.value, gauge)
+			case Counter:
+				counter, err := repo.GetCounter(metricName)
 				assert.NoError(t, err)
-				assert.Equal(t, 1, len(counters))
-				assert.Equal(t, tt.value, counters["TestMetric"])
+				assert.Equal(t, tt.value, counter)
 			}
 		})
 	}

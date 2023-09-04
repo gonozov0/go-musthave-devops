@@ -34,16 +34,16 @@ func (repo *InMemoryRepository) UpdateCounter(metricName string, value int64) er
 	return nil
 }
 
-// GetGauges returns all gauge metrics.
-func (repo *InMemoryRepository) GetGauges() (map[string]float64, error) {
+// GetGauge return gauge metric by name.
+func (repo *InMemoryRepository) GetGauge(name string) (float64, error) {
 	repo.gaugeMu.RLock()
 	defer repo.gaugeMu.RUnlock()
-	return repo.gauges, nil
+	return repo.gauges[name], nil
 }
 
-// GetCounters returns all counter metrics.
-func (repo *InMemoryRepository) GetCounters() (map[string]int64, error) {
+// GetCounter return counter metric by name.
+func (repo *InMemoryRepository) GetCounter(name string) (int64, error) {
 	repo.counterMu.RLock()
 	defer repo.counterMu.RUnlock()
-	return repo.counters, nil
+	return repo.counters[name], nil
 }

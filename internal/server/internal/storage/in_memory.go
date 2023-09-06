@@ -47,3 +47,29 @@ func (repo *InMemoryRepository) GetCounter(name string) (int64, error) {
 	defer repo.counterMu.RUnlock()
 	return repo.counters[name], nil
 }
+
+// GetAllGauges returns all gauge metrics.
+func (repo *InMemoryRepository) GetAllGauges() ([]GaugeMetric, error) {
+	repo.gaugeMu.RLock()
+	defer repo.gaugeMu.RUnlock()
+
+	var gauges []GaugeMetric
+	for name, value := range repo.gauges {
+		gauges = append(gauges, GaugeMetric{Name: name, Value: value})
+	}
+
+	return gauges, nil
+}
+
+// GetAllCounters returns all counter metrics.
+func (repo *InMemoryRepository) GetAllCounters() ([]CounterMetric, error) {
+	repo.counterMu.RLock()
+	defer repo.counterMu.RUnlock()
+
+	var counters []CounterMetric
+	for name, value := range repo.counters {
+		counters = append(counters, CounterMetric{Name: name, Value: value})
+	}
+
+	return counters, nil
+}

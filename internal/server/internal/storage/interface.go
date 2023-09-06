@@ -10,4 +10,8 @@ type Repository interface {
 	GetGauge(name string) (float64, error)
 	// GetCounter return counter metric by name.
 	GetCounter(name string) (int64, error)
+	// GetAllGauges returns all gauge metrics.
+	GetAllGauges() ([]GaugeMetric, error)
+	// GetAllCounters returns all counter metrics.
+	GetAllCounters() ([]CounterMetric, error)
 }

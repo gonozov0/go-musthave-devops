@@ -12,54 +12,53 @@ import (
 	"github.com/gonozov0/go-musthave-devops/internal/server/internal/storage"
 )
 
-func TestUpdateMetricsHandler(t *testing.T) {
-	tests := []struct {
-		name       string
-		method     string
-		value      interface{}
-		expectCode int
-	}{
-		{
-			name:       "Test gauge",
-			method:     Gauge,
-			value:      42.0,
-			expectCode: http.StatusOK,
-		},
-		{
-			name:       "Test counter",
-			method:     Counter,
-			value:      int64(42),
-			expectCode: http.StatusOK,
-		},
-	}
-
+func TestCreateMetric(t *testing.T) {
 	repo := storage.NewInMemoryRepository()
 	handler := NewHandler(repo)
 
 	r := chi.NewRouter()
+	r.Post("/update/{metricType}/{metricName}/{metricValue}", handler.CreateMetric)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			metricName := "TestMetric"
-			url := fmt.Sprintf("/update/%s/%s/%v", tt.method, metricName, tt.value)
-			req, err := http.NewRequest("POST", url, nil)
-			assert.NoError(t, err)
+	testCases := []struct {
+		name         string
+		metricType   string
+		metricName   string
+		metricValue  interface{}
+		expectedCode int
+		expectedErr  string
+	}{
+		{"TestGauge", Gauge, "temperature", 32.5, http.StatusOK, ""},
+		{"TestCounter", Counter, "visits", int64(10), http.StatusOK, ""},
+		{"TestInvalidFloat", Gauge, "temperature", "not-a-float", http.StatusBadRequest, "Invalid float metricValue\n"},
+		{"TestInvalidFloat", Counter, "visits", "not-an-int", http.StatusBadRequest, "Invalid integer metricValue\n"},
+		{"TestUnknownType", "unknownType", "unknown", "0", http.StatusNotImplemented, "Unknown metric type\n"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequest("POST", fmt.Sprintf("/update/%s/%s/%v", tc.metricType, tc.metricName, tc.metricValue), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			rr := httptest.NewRecorder()
-			r.Post("/update/{metricType}/{metricName}/{value}", handler.CreateMetric)
 			r.ServeHTTP(rr, req)
 
-			assert.Equal(t, tt.expectCode, rr.Code)
+			assert.Equal(t, tc.expectedCode, rr.Code)
 
-			switch tt.method {
-			case Gauge:
-				gauge, err := repo.GetGauge(metricName)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.value, gauge)
-			case Counter:
-				counter, err := repo.GetCounter(metricName)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.value, counter)
+			if tc.expectedCode == http.StatusOK {
+				switch tc.metricType {
+				case Gauge:
+					gauge, err := repo.GetGauge(tc.metricName)
+					assert.NoError(t, err)
+					assert.Equal(t, tc.metricValue, gauge)
+				case Counter:
+					counter, err := repo.GetCounter(tc.metricName)
+					assert.NoError(t, err)
+					assert.Equal(t, tc.metricValue, counter)
+				}
+			} else {
+				assert.Equal(t, tc.expectedErr, rr.Body.String())
 			}
 		})
 	}

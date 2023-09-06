@@ -2,7 +2,9 @@ package metrics
 
 import (
 	"encoding/binary"
+	"errors"
 	"github.com/go-chi/chi/v5"
+	"github.com/gonozov0/go-musthave-devops/internal/server/internal/storage"
 	"net/http"
 )
 
@@ -17,10 +19,6 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	switch metricType {
 	case Gauge:
 		value, err = h.Repo.GetGauge(metricName)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 	case Counter:
 		value, err = h.Repo.GetCounter(metricName)
 	default:
@@ -30,6 +28,10 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		if errors.Is(err, storage.MetricNotFoundError) {
+			http.Error(w, "Metric not found", http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -12,27 +12,27 @@ import (
 func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
-	valueStr := chi.URLParam(r, "value")
+	metricValue := chi.URLParam(r, "metricValue")
 
 	var err error
 
 	switch metricType {
 	case Gauge:
 		var value float64
-		value, err = strconv.ParseFloat(valueStr, 64)
+		value, err = strconv.ParseFloat(metricValue, 64)
 		if err != nil {
-			http.Error(w, "Invalid float value", http.StatusBadRequest)
+			http.Error(w, "Invalid float metricValue", http.StatusBadRequest)
 			return
 		}
-		err = h.Repo.UpdateGauge(metricName, value)
+		err = h.Repo.CreateGauge(metricName, value)
 	case Counter:
 		var value int64
-		value, err = strconv.ParseInt(valueStr, 10, 64)
+		value, err = strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
-			http.Error(w, "Invalid integer value", http.StatusBadRequest)
+			http.Error(w, "Invalid integer metricValue", http.StatusBadRequest)
 			return
 		}
-		err = h.Repo.UpdateCounter(metricName, value)
+		err = h.Repo.CreateCounter(metricName, value)
 	default:
 		// Must be 400, return 501 because of autotests.
 		http.Error(w, "Unknown metric type", http.StatusNotImplemented)

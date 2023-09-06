@@ -21,10 +21,8 @@ func Run() {
 	r.Use(middleware.StripSlashes)
 
 	r.Get("/", handler.GetAllMetrics)
-	r.Route("/update/{metricType}/{metricName}", func(r chi.Router) {
-		r.Post("/{value}", handler.CreateMetric)
-		r.Get("/", handler.GetMetric)
-	})
+	r.Get("/value/{metricType}/{metricName}", handler.GetMetric)
+	r.Post("/update/{metricType}/{metricName}", handler.CreateMetric)
 
 	log.Println("Starting server on port :8080")
 

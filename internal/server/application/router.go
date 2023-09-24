@@ -12,7 +12,7 @@ func NewRouter(repo repository.Repository) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(middleware.Logger)
-	//router.Use(middleware.Recoverer)
+	router.Use(middleware.Recoverer)
 	router.Use(middleware.StripSlashes)
 
 	router.Get("/", handler.GetAllMetrics)

@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -40,7 +41,7 @@ func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		log.Printf("Error updating metric: %v", err)
+		log.Errorf("Error updating metric: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

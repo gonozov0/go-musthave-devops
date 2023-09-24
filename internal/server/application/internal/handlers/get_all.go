@@ -18,6 +18,8 @@ func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+
 	fmt.Fprint(w, "<html><body><h1>Metrics</h1><ul>")
 	fmt.Fprint(w, "<h2>Gauges</h2><ul>")
 	for _, metric := range gaugeMetrics {
@@ -30,6 +32,4 @@ func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "<li>%s: %v</li>", metric.Name, metric.Value)
 	}
 	fmt.Fprint(w, "</ul></body></html>")
-
-	w.WriteHeader(http.StatusOK)
 }

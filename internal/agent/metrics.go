@@ -1,4 +1,4 @@
-package internal
+package agent
 
 import (
 	"bytes"
@@ -64,7 +64,6 @@ func SendMetrics(metrics []Metric, serverAddress string) ([]Metric, error) {
 		}
 
 		req.Header.Set("Content-Type", "text/plain")
-
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {

@@ -3,6 +3,7 @@ module github.com/gonozov0/go-musthave-devops
 go 1.21
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/stretchr/testify v1.8.4
 )

@@ -4,16 +4,17 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gonozov0/go-musthave-devops/internal/server/internal/handlers"
-	"github.com/gonozov0/go-musthave-devops/internal/server/internal/storage"
+	"github.com/gonozov0/go-musthave-devops/internal/server/internal/application"
+
+	"github.com/gonozov0/go-musthave-devops/internal/server/internal/repository"
 )
 
-func Start() {
-	repo := storage.NewInMemoryRepository()
-	handler := &handlers.UpdateMetricsHandler{Repo: repo}
-	http.HandleFunc("/update/", handler.UpdateMetrics)
+func Run() {
+	repo := repository.NewInMemoryRepository()
+	router := application.NewRouter(repo)
+	log.Println("Starting server on port :8080")
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":8080", router); err != nil {
 		log.Fatalf("Could not start server: %s", err.Error())
 	}
 }

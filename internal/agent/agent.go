@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Start() {
+func Run() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("ERROR loading config: %v", err)

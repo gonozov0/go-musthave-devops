@@ -1,13 +1,33 @@
 package handlers
 
 import (
-	"encoding/binary"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gonozov0/go-musthave-devops/internal/server/internal/repository"
 )
+
+// getGaugeValue returns the string value of the gauge metric.
+func (h *Handler) getGaugeValue(metricName string) (string, error) {
+	value, err := h.Repo.GetGauge(metricName)
+	if err != nil {
+		return "", err
+	}
+	valueStr := strconv.FormatFloat(value, 'f', -1, 64)
+	return valueStr, nil
+}
+
+// getCounterValue returns the string value of the counter metric.
+func (h *Handler) getCounterValue(metricName string) (string, error) {
+	value, err := h.Repo.GetCounter(metricName)
+	if err != nil {
+		return "", err
+	}
+	valueStr := strconv.FormatInt(value, 10)
+	return valueStr, nil
+}
 
 // GetMetric is the HTTP handler for getting metrics.
 func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
@@ -15,13 +35,13 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "metricName")
 
 	var err error
-	var value interface{}
+	var value string
 
 	switch metricType {
 	case Gauge:
-		value, err = h.Repo.GetGauge(metricName)
+		value, err = h.getGaugeValue(metricName)
 	case Counter:
-		value, err = h.Repo.GetCounter(metricName)
+		value, err = h.getCounterValue(metricName)
 	default:
 		// Must be 400, return 501 because of autotests.
 		http.Error(w, "Unknown metric type", http.StatusNotImplemented)
@@ -37,10 +57,9 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = binary.Write(w, binary.LittleEndian, value)
+	_, err = w.Write([]byte(value))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 
 	w.WriteHeader(http.StatusOK)

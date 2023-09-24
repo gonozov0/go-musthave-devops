@@ -30,4 +30,6 @@ func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "<li>%s: %v</li>", metric.Name, metric.Value)
 	}
 	fmt.Fprint(w, "</ul></body></html>")
+
+	w.WriteHeader(http.StatusOK)
 }

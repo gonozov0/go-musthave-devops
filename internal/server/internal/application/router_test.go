@@ -1,10 +1,7 @@
 package application
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -74,17 +71,13 @@ func TestGetAllMetrics(t *testing.T) {
 	t.Run("empty repository", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, request)
+		strBody := recorder.Body.String()
 
-		res := recorder.Result()
-		defer res.Body.Close()
-
-		body, _ := io.ReadAll(res.Body)
-
-		if res.StatusCode != http.StatusOK {
-			t.Errorf("Expected status OK, got %v", res.StatusCode)
+		if recorder.Code != http.StatusOK {
+			t.Errorf("Expected status OK, got %v", recorder.Code)
 		}
 
-		if !strings.Contains(string(body), "<h1>Metrics</h1>") {
+		if !strings.Contains(strBody, "<h1>Metrics</h1>") {
 			t.Errorf("HTML body does not contain header <h1>Metrics</h1>")
 		}
 	})
@@ -92,24 +85,20 @@ func TestGetAllMetrics(t *testing.T) {
 	t.Run("repository with metrics", func(t *testing.T) {
 		repo.CreateGauge("gauge1", 10.5)
 		repo.UpdateCounter("counter1", 2)
+
 		recorder := httptest.NewRecorder()
-
 		router.ServeHTTP(recorder, request)
+		strBody := recorder.Body.String()
 
-		res := recorder.Result()
-		defer res.Body.Close()
-
-		body, _ := io.ReadAll(res.Body)
-
-		if res.StatusCode != http.StatusOK {
-			t.Errorf("Expected status OK, got %v", res.StatusCode)
+		if recorder.Code != http.StatusOK {
+			t.Errorf("Expected status OK, got %v", recorder.Code)
 		}
 
-		if !strings.Contains(string(body), "<li>gauge1: 10.5</li>") {
+		if !strings.Contains(strBody, "<li>gauge1: 10.5</li>") {
 			t.Errorf("HTML body does not contain gauge1 metrics")
 		}
 
-		if !strings.Contains(string(body), "<li>counter1: 2</li>") {
+		if !strings.Contains(strBody, "<li>counter1: 2</li>") {
 			t.Errorf("HTML body does not contain counter1 metrics")
 		}
 	})
@@ -127,13 +116,13 @@ func TestGetMetric(t *testing.T) {
 		metricType   string
 		metricName   string
 		expectedCode int
-		expectedVal  interface{}
+		expectedVal  string
 	}{
-		{"Valid Gauge", handlers.Gauge, "temperature", http.StatusOK, float64(42.5)},
-		{"Valid Counter", handlers.Counter, "visits", http.StatusOK, int64(100)},
-		{"Unknown Type", "unknownType", "unknown", http.StatusNotImplemented, nil},
-		{"Nonexistent Gauge", handlers.Gauge, "nonexistent", http.StatusNotFound, nil},
-		{"Nonexistent Counter", handlers.Counter, "nonexistent", http.StatusNotFound, nil},
+		{"Valid Gauge", handlers.Gauge, "temperature", http.StatusOK, "42.5"},
+		{"Valid Counter", handlers.Counter, "visits", http.StatusOK, "100"},
+		{"Unknown Type", "unknownType", "unknown", http.StatusNotImplemented, ""},
+		{"Nonexistent Gauge", handlers.Gauge, "nonexistent", http.StatusNotFound, ""},
+		{"Nonexistent Counter", handlers.Counter, "nonexistent", http.StatusNotFound, ""},
 	}
 
 	for _, tc := range testCases {
@@ -146,25 +135,13 @@ func TestGetMetric(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 			router.ServeHTTP(recorder, req)
+			strBody := recorder.Body.String()
 
-			assert.Equal(t, tc.expectedCode, recorder.Code, recorder.Body.String())
+			assert.Equal(t, tc.expectedCode, recorder.Code, strBody)
 
 			if tc.expectedCode == http.StatusOK {
-				buf := bytes.NewBuffer(recorder.Body.Bytes())
-				var actualVal interface{}
 
-				switch tc.metricType {
-				case handlers.Gauge:
-					var v float64
-					binary.Read(buf, binary.LittleEndian, &v)
-					actualVal = v
-				case handlers.Counter:
-					var v int64
-					binary.Read(buf, binary.LittleEndian, &v)
-					actualVal = v
-				}
-
-				assert.Equal(t, tc.expectedVal, actualVal)
+				assert.Equal(t, tc.expectedVal, strBody)
 			}
 		})
 	}

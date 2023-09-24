@@ -19,7 +19,7 @@ func newConfig() Config {
 	return Config{
 		PollInterval:   2,
 		ReportInterval: 10,
-		ServerAddress:  "http://localhost:8080",
+		ServerAddress:  "localhost:8080",
 	}
 }
 
@@ -43,19 +43,15 @@ func LoadConfig() (Config, error) {
 		config.ServerAddress = envAddress
 	}
 
-	serverAddr := flag.String("a", config.ServerAddress, "HTTP server endpoint address")
-	reportInterval := flag.Int("r", config.ReportInterval, "Frequency of sending metrics to the server (in seconds)")
-	pollInterval := flag.Int("p", config.PollInterval, "Frequency of polling metrics from the runtime package (in seconds)")
+	flag.StringVar(&config.ServerAddress, "a", config.ServerAddress, "HTTP server endpoint address")
+	flag.IntVar(&config.ReportInterval, "r", config.ReportInterval, "Frequency of sending metrics to the server (in seconds)")
+	flag.IntVar(&config.PollInterval, "p", config.PollInterval, "Frequency of polling metrics from the runtime package (in seconds)")
 
 	flag.Parse()
 
 	if len(flag.Args()) > 0 {
 		return config, errors.New("unexpected arguments provided")
 	}
-
-	config.ServerAddress = *serverAddr
-	config.ReportInterval = *reportInterval
-	config.PollInterval = *pollInterval
 
 	return config, nil
 }

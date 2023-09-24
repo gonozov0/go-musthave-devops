@@ -26,15 +26,13 @@ func LoadConfig() (Config, error) {
 		config.ServerAddress = envAddress
 	}
 
-	serverAddr := flag.String("a", config.ServerAddress, "HTTP server endpoint address")
+	flag.StringVar(&config.ServerAddress, "a", config.ServerAddress, "HTTP server endpoint address")
 
 	flag.Parse()
 
 	if len(flag.Args()) > 0 {
 		return config, errors.New("unexpected arguments provided")
 	}
-
-	config.ServerAddress = *serverAddr
 
 	return config, nil
 }

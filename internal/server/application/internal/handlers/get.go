@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
+
 	"github.com/go-chi/chi/v5"
-	"github.com/gonozov0/go-musthave-devops/internal/server/internal/repository"
 )
 
 // getGaugeValue returns the string value of the gauge metric.
@@ -57,10 +58,9 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write([]byte(value))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
 }

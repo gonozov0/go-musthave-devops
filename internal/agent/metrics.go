@@ -1,10 +1,11 @@
-package internal
+package agent
 
 import (
 	"bytes"
 	"fmt"
 	"net/http"
 	"runtime"
+	"strings"
 )
 
 // Metric is a struct that represents a metric
@@ -57,14 +58,17 @@ func CollectMetrics() []Metric {
 // SendMetrics sends metrics to the server and returns a new metrics slice
 func SendMetrics(metrics []Metric, serverAddress string) ([]Metric, error) {
 	for _, metric := range metrics {
-		url := fmt.Sprintf("%s/update/%s/%s/%v", serverAddress, metric.Type, metric.Name, metric.Value)
+		var url string
+		if !strings.HasPrefix(serverAddress, "http") {
+			url += "http://"
+		}
+		url += fmt.Sprintf("%s/update/%s/%s/%v", serverAddress, metric.Type, metric.Name, metric.Value)
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(nil))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create request: %v", err)
 		}
 
 		req.Header.Set("Content-Type", "text/plain")
-
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {

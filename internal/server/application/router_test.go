@@ -7,11 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gonozov0/go-musthave-devops/internal/server/internal/application/internal/handlers"
+	"github.com/gonozov0/go-musthave-devops/internal/server/application/internal/handlers"
+	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/gonozov0/go-musthave-devops/internal/server/internal/repository"
 )
 
 func TestCreateMetric(t *testing.T) {

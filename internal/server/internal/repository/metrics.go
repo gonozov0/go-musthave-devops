@@ -1,4 +1,4 @@
-package storage
+package repository
 
 // GaugeMetric is a struct that represents a gauge metric.
 type GaugeMetric struct {

@@ -1,4 +1,4 @@
-package metrics
+package handlers
 
 // Metric types as string constants
 const (

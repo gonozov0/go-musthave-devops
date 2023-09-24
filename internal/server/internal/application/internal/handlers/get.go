@@ -1,11 +1,12 @@
-package metrics
+package handlers
 
 import (
 	"encoding/binary"
 	"errors"
-	"github.com/go-chi/chi/v5"
-	"github.com/gonozov0/go-musthave-devops/internal/server/internal/storage"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/gonozov0/go-musthave-devops/internal/server/internal/repository"
 )
 
 // GetMetric is the HTTP handler for getting metrics.
@@ -28,7 +29,7 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		if errors.Is(err, storage.MetricNotFoundError) {
+		if errors.Is(err, repository.ErrMetricNotFound) {
 			http.Error(w, "Metric not found", http.StatusNotFound)
 			return
 		}

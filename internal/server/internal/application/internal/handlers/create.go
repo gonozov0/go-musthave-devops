@@ -1,4 +1,4 @@
-package metrics
+package handlers
 
 import (
 	"log"
@@ -32,7 +32,7 @@ func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid integer metricValue", http.StatusBadRequest)
 			return
 		}
-		err = h.Repo.CreateCounter(metricName, value)
+		err = h.Repo.UpdateCounter(metricName, value)
 	default:
 		// Must be 400, return 501 because of autotests.
 		http.Error(w, "Unknown metric type", http.StatusNotImplemented)

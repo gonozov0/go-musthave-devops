@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"time"
+
+	"github.com/avast/retry-go"
 )
 
 // Metric is a struct that represents a metric
@@ -58,15 +61,23 @@ func CollectMetrics() []Metric {
 func SendMetrics(metrics []Metric, serverAddress string) ([]Metric, error) {
 	for _, metric := range metrics {
 		url := fmt.Sprintf("%s/update/%s/%s/%v", serverAddress, metric.Type, metric.Name, metric.Value)
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(nil))
-		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %v", err)
-		}
-
-		req.Header.Set("Content-Type", "text/plain")
-
 		client := &http.Client{}
-		resp, err := client.Do(req)
+		var resp *http.Response
+
+		err := retry.Do(
+			func() error {
+				r, err := client.Post(url, "text/plain", bytes.NewBuffer([]byte{}))
+				if err != nil {
+					return err
+				}
+				defer r.Body.Close()
+				resp = r
+				return nil
+			},
+			retry.Attempts(2),
+			retry.Delay(time.Second),
+			retry.MaxJitter(500*time.Millisecond),
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to send metrics: %v", err)
 		}
@@ -74,7 +85,6 @@ func SendMetrics(metrics []Metric, serverAddress string) ([]Metric, error) {
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("received non-OK response while sending metrics: %s", resp.Status)
 		}
-		resp.Body.Close()
 	}
 	return []Metric{}, nil
 }

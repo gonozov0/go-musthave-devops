@@ -11,7 +11,7 @@ func NewRouter(repo repository.Repository) *chi.Mux {
 	handler := handlers.NewHandler(repo)
 	router := chi.NewRouter()
 
-	//router.Use(middleware.Logger)
+	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.StripSlashes)
 

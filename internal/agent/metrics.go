@@ -14,12 +14,15 @@ import (
 	"github.com/avast/retry-go"
 )
 
+var pollCount int64
+
 // CollectMetrics collects metrics from the runtime and returns them as a slice
 func CollectMetrics() []shared.Metric {
 	var metrics []shared.Metric
 	var memStats runtime.MemStats
 
 	runtime.ReadMemStats(&memStats)
+	pollCount++
 
 	metrics = append(metrics,
 		newGaugeMetric("Alloc", memStats.Alloc),
@@ -49,6 +52,8 @@ func CollectMetrics() []shared.Metric {
 		newGaugeMetric("StackSys", memStats.StackSys),
 		newGaugeMetric("Sys", memStats.Sys),
 		newGaugeMetric("TotalAlloc", memStats.TotalAlloc),
+		newCounterMetric("PollCount", pollCount),
+		newGaugeMetric("RandomValue", time.Now().UnixNano()),
 	)
 
 	return metrics
@@ -69,6 +74,10 @@ func newGaugeMetric(metricName string, metricValue interface{}) shared.Metric {
 	}
 
 	return shared.Metric{ID: metricName, MType: shared.Gauge, Value: &floatValue}
+}
+
+func newCounterMetric(metricName string, metricValue int64) shared.Metric {
+	return shared.Metric{ID: metricName, MType: shared.Counter, Delta: &metricValue}
 }
 
 // SendMetrics sends metrics to the server and returns a new metrics slice

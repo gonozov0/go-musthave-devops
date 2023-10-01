@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gonozov0/go-musthave-devops/internal/shared"
-
 	"github.com/avast/retry-go"
+
+	"github.com/gonozov0/go-musthave-devops/internal/shared"
 )
 
 var pollCount int64
@@ -65,6 +65,8 @@ func newGaugeMetric(metricName string, metricValue interface{}) shared.Metric {
 	switch metricValueTyped := metricValue.(type) {
 	case float64:
 		floatValue = metricValueTyped
+	case int64:
+		floatValue = float64(metricValueTyped)
 	case uint64:
 		floatValue = float64(metricValueTyped)
 	case uint32:

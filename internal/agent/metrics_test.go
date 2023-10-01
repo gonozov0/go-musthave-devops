@@ -17,6 +17,11 @@ func TestCollectMetrics(t *testing.T) {
 
 	for _, metric := range metrics {
 		assert.NotEmpty(t, metric.ID)
+		if metric.ID == "PollCount" {
+			assert.Equal(t, "counter", metric.MType)
+			assert.NotNil(t, metric.Delta)
+			continue
+		}
 		assert.Equal(t, "gauge", metric.MType)
 		assert.NotNil(t, metric.Value)
 	}

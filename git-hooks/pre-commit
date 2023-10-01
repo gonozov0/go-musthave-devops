@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Проверьте все файлы с помощью вашего инструмента
-go vet -vettool=$GOPATH/bin/vetstatictest ./...
+go vet -vettool=$GOPATH/bin/statictest ./...
 if [ $? -ne 0 ]; then
   echo "Go vet failed, commit denied"
   exit 1

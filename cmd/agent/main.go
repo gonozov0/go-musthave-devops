@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gonozov0/go-musthave-devops/internal/agent"
+	"github.com/gonozov0/go-musthave-devops/internal/shared"
 )
 
 func main() {
@@ -17,7 +18,7 @@ func main() {
 	collectTicker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
 	sendTicker := time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second)
 
-	var metrics []agent.Metric
+	var metrics []shared.Metric
 
 	for {
 		select {

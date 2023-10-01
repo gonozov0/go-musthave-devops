@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"sync"
 )
 
@@ -21,23 +20,22 @@ func NewInMemoryRepository() *InMemoryRepository {
 	}
 }
 
-// CreateGauge updates or sets a new gauge metric with the given name and value.
-func (repo *InMemoryRepository) CreateGauge(metricName string, value float64) error {
+// UpdateGauge updates or sets a new gauge metric with the given name and value.
+func (repo *InMemoryRepository) UpdateGauge(metricName string, value float64) (float64, error) {
 	repo.gaugeMu.Lock()
 	defer repo.gaugeMu.Unlock()
 	repo.gauges[metricName] = value
-	return nil
+	return value, nil
 }
 
 // UpdateCounter updates or sets a new counter metric with the given name and value.
-func (repo *InMemoryRepository) UpdateCounter(metricName string, value int64) error {
+func (repo *InMemoryRepository) UpdateCounter(metricName string, value int64) (int64, error) {
 	repo.counterMu.Lock()
 	defer repo.counterMu.Unlock()
-	repo.counters[metricName] += value
-	return nil
+	newValue := repo.counters[metricName] + value
+	repo.counters[metricName] = newValue
+	return newValue, nil
 }
-
-var ErrMetricNotFound = errors.New("metric not found")
 
 // GetGauge return gauge metric by name.
 func (repo *InMemoryRepository) GetGauge(name string) (float64, error) {

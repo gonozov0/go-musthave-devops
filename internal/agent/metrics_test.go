@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gonozov0/go-musthave-devops/internal/shared"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,8 +16,8 @@ func TestCollectMetrics(t *testing.T) {
 	assert.NotEmpty(t, metrics)
 
 	for _, metric := range metrics {
-		assert.NotEmpty(t, metric.Name)
-		assert.Equal(t, "gauge", metric.Type)
+		assert.NotEmpty(t, metric.ID)
+		assert.Equal(t, "gauge", metric.MType)
 		assert.NotNil(t, metric.Value)
 	}
 }
@@ -26,13 +28,17 @@ func TestSendMetrics(t *testing.T) {
 	}))
 	defer server.Close()
 
-	metrics := []Metric{
-		{Name: "TestMetric1", Type: "gauge", Value: 42.0},
-		{Name: "TestMetric2", Type: "gauge", Value: 43.0},
+	testFloat := 42.0
+	testInt := int64(42)
+
+	metrics := []shared.Metric{
+		{ID: "TestMetric1", MType: shared.Gauge, Value: &testFloat},
+		{ID: "TestMetric2", MType: shared.Counter, Delta: &testInt},
 	}
 
 	newMetrics, err := SendMetrics(metrics, server.URL)
 
 	assert.NoError(t, err)
 	assert.Empty(t, newMetrics)
+
 }

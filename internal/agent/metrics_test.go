@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gonozov0/go-musthave-devops/internal/shared"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/gonozov0/go-musthave-devops/internal/shared"
 )
 
 func TestCollectMetrics(t *testing.T) {

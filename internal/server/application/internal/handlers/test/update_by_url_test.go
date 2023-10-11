@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
-	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
+	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
 	"github.com/gonozov0/go-musthave-devops/internal/shared"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,14 +26,32 @@ func TestUpdateMetricByURL(t *testing.T) {
 	}{
 		{"TestGauge", shared.Gauge, "temperature", 32.5, http.StatusOK, ""},
 		{"TestCounter", shared.Counter, "visits", int64(10), http.StatusOK, ""},
-		{"TestInvalidFloat", shared.Gauge, "temperature", "not-a-float", http.StatusBadRequest, "Invalid float metricValue\n"},
-		{"TestInvalidFloat", shared.Counter, "visits", "not-an-int", http.StatusBadRequest, "Invalid integer metricValue\n"},
+		{
+			"TestInvalidFloat",
+			shared.Gauge,
+			"temperature",
+			"not-a-float",
+			http.StatusBadRequest,
+			"Invalid float metricValue\n",
+		},
+		{
+			"TestInvalidFloat",
+			shared.Counter,
+			"visits",
+			"not-an-int",
+			http.StatusBadRequest,
+			"Invalid integer metricValue\n",
+		},
 		{"TestUnknownType", "unknownType", "unknown", "0", http.StatusNotImplemented, "Unknown metric type\n"},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			req, err := http.NewRequest("POST", fmt.Sprintf("/update/%s/%s/%v", tc.metricType, tc.metricName, tc.metricValue), nil)
+			req, err := http.NewRequest(
+				"POST",
+				fmt.Sprintf("/update/%s/%s/%v", tc.metricType, tc.metricName, tc.metricValue),
+				nil,
+			)
 			if err != nil {
 				t.Fatal(err)
 			}

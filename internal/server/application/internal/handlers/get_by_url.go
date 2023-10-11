@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gonozov0/go-musthave-devops/internal/shared"
-
 	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
+
+	"github.com/gonozov0/go-musthave-devops/internal/shared"
 
 	"github.com/go-chi/chi/v5"
 )

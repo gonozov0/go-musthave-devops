@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gonozov0/go-musthave-devops/internal/server"
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
-	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
+	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
 )
 
 func main() {
@@ -16,11 +21,49 @@ func main() {
 		log.Fatalf("Could not load config: %s", err.Error())
 	}
 
-	repo := repository.NewInMemoryRepository()
-	router := application.NewRouter(repo)
-	log.Infof("Starting server on port %s\n", cfg.ServerAddress)
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 
-	if err := http.ListenAndServe(cfg.ServerAddress, router); err != nil {
-		log.Fatalf("Could not start server: %s", err.Error())
+	repo, err := repository.NewInMemoryRepositoryWithFileStorage(
+		ctx,
+		wg,
+		cfg.FileStoragePath,
+		cfg.StoreInterval,
+		cfg.RestoreFlag,
+	)
+	if err != nil {
+		log.Fatalf("Could not init in memory repository: %s", err.Error())
+	}
+
+	stopChan := make(chan os.Signal, 1)
+	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM)
+
+	errChan := make(chan error, 1)
+
+	router := application.NewRouter(repo)
+
+	srv := &http.Server{
+		Addr:    cfg.ServerAddress,
+		Handler: router,
+	}
+
+	go func() {
+		log.Infof("Starting server on port %s", cfg.ServerAddress)
+		if err := srv.ListenAndServe(); err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case <-stopChan:
+		log.Info("Received signal to stop. Shutting down...")
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Errorf("Server shutdown failed:%+v", err)
+		}
+		cancel()
+		wg.Wait()
+	case err := <-errChan:
+		log.Fatalf("Server error: %s", err.Error())
 	}
 }

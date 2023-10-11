@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gonozov0/go-musthave-devops/internal/shared"
-
 	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
+
+	"github.com/gonozov0/go-musthave-devops/internal/shared"
 )
 
 func (h *Handler) GetMetricByBody(w http.ResponseWriter, r *http.Request) {

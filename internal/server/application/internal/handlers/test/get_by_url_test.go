@@ -7,8 +7,7 @@ import (
 	"testing"
 
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
-
-	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
+	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
 	"github.com/gonozov0/go-musthave-devops/internal/shared"
 	"github.com/stretchr/testify/assert"
 )

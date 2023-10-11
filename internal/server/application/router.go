@@ -3,10 +3,10 @@ package application
 import (
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
 
 	"github.com/gonozov0/go-musthave-devops/internal/server/application/internal/handlers"
 	"github.com/gonozov0/go-musthave-devops/internal/server/application/internal/middleware"
-	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
 )
 
 func NewRouter(repo repository.Repository) *chi.Mux {

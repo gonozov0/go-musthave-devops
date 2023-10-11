@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
-	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
+	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
 	"github.com/gonozov0/go-musthave-devops/internal/shared"
 )
 
@@ -30,11 +30,36 @@ func TestGetMetricByBody(t *testing.T) {
 		expectedCode int
 		expectedErr  string
 	}{
-		{name: "TestGauge", metric: shared.Metric{ID: "temperature", MType: shared.Gauge}, expectedCode: http.StatusOK, expectedErr: ""},
-		{name: "TestCounter", metric: shared.Metric{ID: "visits", MType: shared.Counter}, expectedCode: http.StatusOK, expectedErr: ""},
-		{name: "TestUnknownType", metric: shared.Metric{ID: "unknown", MType: "unknownType"}, expectedCode: http.StatusNotImplemented, expectedErr: "Unknown metric type\n"},
-		{name: "TestNonexistentGauge", metric: shared.Metric{ID: "nonexistent", MType: shared.Gauge}, expectedCode: http.StatusNotFound, expectedErr: "Metric not found\n"},
-		{name: "TestNonexistentCounter", metric: shared.Metric{ID: "nonexistent", MType: shared.Counter}, expectedCode: http.StatusNotFound, expectedErr: "Metric not found\n"},
+		{
+			name:         "TestGauge",
+			metric:       shared.Metric{ID: "temperature", MType: shared.Gauge},
+			expectedCode: http.StatusOK,
+			expectedErr:  "",
+		},
+		{
+			name:         "TestCounter",
+			metric:       shared.Metric{ID: "visits", MType: shared.Counter},
+			expectedCode: http.StatusOK,
+			expectedErr:  "",
+		},
+		{
+			name:         "TestUnknownType",
+			metric:       shared.Metric{ID: "unknown", MType: "unknownType"},
+			expectedCode: http.StatusNotImplemented,
+			expectedErr:  "Unknown metric type\n",
+		},
+		{
+			name:         "TestNonexistentGauge",
+			metric:       shared.Metric{ID: "nonexistent", MType: shared.Gauge},
+			expectedCode: http.StatusNotFound,
+			expectedErr:  "Metric not found\n",
+		},
+		{
+			name:         "TestNonexistentCounter",
+			metric:       shared.Metric{ID: "nonexistent", MType: shared.Counter},
+			expectedCode: http.StatusNotFound,
+			expectedErr:  "Metric not found\n",
+		},
 	}
 
 	for _, tc := range testCases {

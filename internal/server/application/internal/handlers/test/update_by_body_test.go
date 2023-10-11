@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
-	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
+	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
 	"github.com/gonozov0/go-musthave-devops/internal/shared"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,11 +26,34 @@ func TestUpdateMetricByBody(t *testing.T) {
 		expectedCode int
 		expectedErr  string
 	}{
-		{name: "TestGauge", metric: shared.Metric{ID: "temperature", MType: shared.Gauge, Value: &testFloat64}, expectedCode: http.StatusOK},
-		{name: "TestCounter", metric: shared.Metric{ID: "visits", MType: shared.Counter, Delta: &testInt64}, expectedCode: http.StatusOK},
-		{name: "TestInvalidValue", metric: shared.Metric{ID: "temperature", MType: shared.Gauge, Value: nil}, expectedCode: http.StatusBadRequest, expectedErr: "Invalid metric value for type Gauge\n"},
-		{name: "TestInvalidDelta", metric: shared.Metric{ID: "visits", MType: shared.Counter, Delta: nil}, expectedCode: http.StatusBadRequest, expectedErr: "Invalid metric delta for type Counter\n"},
-		{name: "TestUnknownType", metric: shared.Metric{ID: "unknown", MType: "unknownType"}, expectedCode: http.StatusNotImplemented, expectedErr: "Unknown metric type\n"},
+		{
+			name:         "TestGauge",
+			metric:       shared.Metric{ID: "temperature", MType: shared.Gauge, Value: &testFloat64},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "TestCounter",
+			metric:       shared.Metric{ID: "visits", MType: shared.Counter, Delta: &testInt64},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "TestInvalidValue",
+			metric:       shared.Metric{ID: "temperature", MType: shared.Gauge, Value: nil},
+			expectedCode: http.StatusBadRequest,
+			expectedErr:  "Invalid metric value for type Gauge\n",
+		},
+		{
+			name:         "TestInvalidDelta",
+			metric:       shared.Metric{ID: "visits", MType: shared.Counter, Delta: nil},
+			expectedCode: http.StatusBadRequest,
+			expectedErr:  "Invalid metric delta for type Counter\n",
+		},
+		{
+			name:         "TestUnknownType",
+			metric:       shared.Metric{ID: "unknown", MType: "unknownType"},
+			expectedCode: http.StatusNotImplemented,
+			expectedErr:  "Unknown metric type\n",
+		},
 	}
 
 	for _, tc := range testCases {

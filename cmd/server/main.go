@@ -12,7 +12,9 @@ import (
 
 	"github.com/gonozov0/go-musthave-devops/internal/server"
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
-	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
+	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
+	inmemory "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
+	postgres "github.com/gonozov0/go-musthave-devops/internal/server/repository/postgres"
 )
 
 func main() {
@@ -21,25 +23,34 @@ func main() {
 		log.Fatalf("Could not load config: %s", err.Error())
 	}
 
+	var repo repository.Repository
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
 
-	repo, err := repository.NewInMemoryRepositoryWithFileStorage(
-		ctx,
-		wg,
-		cfg.FileStoragePath,
-		cfg.StoreInterval,
-		cfg.RestoreFlag,
-	)
-	if err != nil {
-		log.Fatalf("Could not init in memory repository: %s", err.Error())
+	if cfg.DatabaseDSN != "" {
+		repo, err = postgres.NewPGRepository(cfg.DatabaseDSN)
+		if err != nil {
+			log.Fatalf("Could not init postgres repository: %s", err.Error())
+		}
+	} else if cfg.FileStoragePath != "" {
+		wg.Add(1)
+		repo, err = inmemory.NewInMemoryRepositoryWithFileStorage(
+			ctx,
+			wg,
+			cfg.FileStoragePath,
+			cfg.StoreInterval,
+			cfg.RestoreFlag,
+		)
+		if err != nil {
+			log.Fatalf("Could not init in memory repository: %s", err.Error())
+		}
+	} else {
+		repo = inmemory.NewInMemoryRepository()
 	}
 
+	errChan := make(chan error, 1)
 	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM)
-
-	errChan := make(chan error, 1)
 
 	router := application.NewRouter(repo)
 

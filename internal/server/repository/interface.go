@@ -14,4 +14,10 @@ type Repository interface {
 	GetAllGauges() ([]GaugeMetric, error)
 	// GetAllCounters returns all counter metrics.
 	GetAllCounters() ([]CounterMetric, error)
+	// DeleteGauge deletes gauge metric by name.
+	DeleteGauge(name string) error
+	// DeleteCounter deletes counter metric by name.
+	DeleteCounter(name string) error
+	// Ping checks the connection to the repository.
+	Ping() error
 }

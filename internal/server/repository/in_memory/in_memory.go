@@ -1,4 +1,4 @@
-package inmemory
+package repository
 
 import (
 	"context"
@@ -87,6 +87,11 @@ func NewInMemoryRepositoryWithFileStorage(
 	return &repo, nil
 }
 
+// Ping checks the connection to the repository.
+func (repo *inMemoryRepository) Ping() error {
+	return nil
+}
+
 // UpdateGauge updates or sets a new gauge metric with the given name and value.
 func (repo *inMemoryRepository) UpdateGauge(metricName string, value float64) (float64, error) {
 	repo.gaugeMu.Lock()
@@ -150,6 +155,22 @@ func (repo *inMemoryRepository) GetAllCounters() ([]repository.CounterMetric, er
 	}
 
 	return counters, nil
+}
+
+// DeleteGauge deletes gauge metric by name.
+func (repo *inMemoryRepository) DeleteGauge(name string) error {
+	repo.gaugeMu.Lock()
+	delete(repo.gauges, name)
+	repo.gaugeMu.Unlock()
+	return nil
+}
+
+// DeleteCounter deletes counter metric by name.
+func (repo *inMemoryRepository) DeleteCounter(name string) error {
+	repo.counterMu.Lock()
+	delete(repo.counters, name)
+	repo.counterMu.Unlock()
+	return nil
 }
 
 func (repo *inMemoryRepository) startSaveMetricsInBackground(ctx context.Context, wg *sync.WaitGroup) {

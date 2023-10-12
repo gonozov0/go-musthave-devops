@@ -14,6 +14,7 @@ type Config struct {
 	StoreInterval   uint64 // in seconds
 	FileStoragePath string
 	RestoreFlag     bool
+	DatabaseDSN     string
 }
 
 // newConfig returns a new Config struct with default values
@@ -23,6 +24,7 @@ func newConfig() Config {
 		StoreInterval:   300,
 		FileStoragePath: "/tmp/metrics-db.json",
 		RestoreFlag:     true,
+		DatabaseDSN:     "", // "postgres://postgres:postgres@localhost:5442/development?sslmode=disable",
 	}
 }
 
@@ -50,11 +52,15 @@ func LoadConfig() (Config, error) {
 		}
 		config.RestoreFlag = boolEnvRestoreFlag
 	}
+	if envDatabaseDSN, exists := os.LookupEnv("DATABASE_DSN"); exists {
+		config.DatabaseDSN = envDatabaseDSN
+	}
 
 	flag.StringVar(&config.ServerAddress, "a", config.ServerAddress, "HTTP server endpoint address")
 	flag.Uint64Var(&config.StoreInterval, "i", config.StoreInterval, "Metrics store interval in seconds")
 	flag.StringVar(&config.FileStoragePath, "f", config.FileStoragePath, "File storage path")
 	flag.BoolVar(&config.RestoreFlag, "r", config.RestoreFlag, "Restore metrics from file storage")
+	flag.StringVar(&config.DatabaseDSN, "d", config.DatabaseDSN, "Database server address (postgres)")
 
 	flag.Parse()
 

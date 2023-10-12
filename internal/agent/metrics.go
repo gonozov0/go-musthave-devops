@@ -2,75 +2,115 @@ package agent
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"runtime"
 	"strings"
+	"time"
+
+	"github.com/avast/retry-go"
+
+	"github.com/gonozov0/go-musthave-devops/internal/shared"
 )
 
-// Metric is a struct that represents a metric
-type Metric struct {
-	Name  string      `json:"name"`
-	Type  string      `json:"type"`
-	Value interface{} `json:"value"`
-}
+var pollCount int64
 
 // CollectMetrics collects metrics from the runtime and returns them as a slice
-func CollectMetrics() []Metric {
-	var metrics []Metric
+func CollectMetrics() []shared.Metric {
+	var metrics []shared.Metric
 	var memStats runtime.MemStats
 
 	runtime.ReadMemStats(&memStats)
+	pollCount++
 
 	metrics = append(metrics,
-		Metric{"Alloc", "gauge", float64(memStats.Alloc)},
-		Metric{"BuckHashSys", "gauge", float64(memStats.BuckHashSys)},
-		Metric{"Frees", "gauge", float64(memStats.Frees)},
-		Metric{"GCCPUFraction", "gauge", memStats.GCCPUFraction},
-		Metric{"GCSys", "gauge", float64(memStats.GCSys)},
-		Metric{"HeapAlloc", "gauge", float64(memStats.HeapAlloc)},
-		Metric{"HeapIdle", "gauge", float64(memStats.HeapIdle)},
-		Metric{"HeapInuse", "gauge", float64(memStats.HeapInuse)},
-		Metric{"HeapObjects", "gauge", float64(memStats.HeapObjects)},
-		Metric{"HeapReleased", "gauge", float64(memStats.HeapReleased)},
-		Metric{"HeapSys", "gauge", float64(memStats.HeapSys)},
-		Metric{"LastGC", "gauge", float64(memStats.LastGC)},
-		Metric{"Lookups", "gauge", float64(memStats.Lookups)},
-		Metric{"MCacheInuse", "gauge", float64(memStats.MCacheInuse)},
-		Metric{"MCacheSys", "gauge", float64(memStats.MCacheSys)},
-		Metric{"MSpanInuse", "gauge", float64(memStats.MSpanInuse)},
-		Metric{"MSpanSys", "gauge", float64(memStats.MSpanSys)},
-		Metric{"Mallocs", "gauge", float64(memStats.Mallocs)},
-		Metric{"NextGC", "gauge", float64(memStats.NextGC)},
-		Metric{"NumForcedGC", "gauge", float64(memStats.NumForcedGC)},
-		Metric{"NumGC", "gauge", float64(memStats.NumGC)},
-		Metric{"OtherSys", "gauge", float64(memStats.OtherSys)},
-		Metric{"PauseTotalNs", "gauge", float64(memStats.PauseTotalNs)},
-		Metric{"StackInuse", "gauge", float64(memStats.StackInuse)},
-		Metric{"StackSys", "gauge", float64(memStats.StackSys)},
-		Metric{"Sys", "gauge", float64(memStats.Sys)},
-		Metric{"TotalAlloc", "gauge", float64(memStats.TotalAlloc)},
+		newGaugeMetric("Alloc", memStats.Alloc),
+		newGaugeMetric("BuckHashSys", memStats.BuckHashSys),
+		newGaugeMetric("Frees", memStats.Frees),
+		newGaugeMetric("GCCPUFraction", memStats.GCCPUFraction),
+		newGaugeMetric("GCSys", memStats.GCSys),
+		newGaugeMetric("HeapAlloc", memStats.HeapAlloc),
+		newGaugeMetric("HeapIdle", memStats.HeapIdle),
+		newGaugeMetric("HeapInuse", memStats.HeapInuse),
+		newGaugeMetric("HeapObjects", memStats.HeapObjects),
+		newGaugeMetric("HeapReleased", memStats.HeapReleased),
+		newGaugeMetric("HeapSys", memStats.HeapSys),
+		newGaugeMetric("LastGC", memStats.LastGC),
+		newGaugeMetric("Lookups", memStats.Lookups),
+		newGaugeMetric("MCacheInuse", memStats.MCacheInuse),
+		newGaugeMetric("MCacheSys", memStats.MCacheSys),
+		newGaugeMetric("MSpanInuse", memStats.MSpanInuse),
+		newGaugeMetric("MSpanSys", memStats.MSpanSys),
+		newGaugeMetric("Mallocs", memStats.Mallocs),
+		newGaugeMetric("NextGC", memStats.NextGC),
+		newGaugeMetric("NumForcedGC", memStats.NumForcedGC),
+		newGaugeMetric("NumGC", memStats.NumGC),
+		newGaugeMetric("OtherSys", memStats.OtherSys),
+		newGaugeMetric("PauseTotalNs", memStats.PauseTotalNs),
+		newGaugeMetric("StackInuse", memStats.StackInuse),
+		newGaugeMetric("StackSys", memStats.StackSys),
+		newGaugeMetric("Sys", memStats.Sys),
+		newGaugeMetric("TotalAlloc", memStats.TotalAlloc),
+		newCounterMetric("PollCount", pollCount),
+		newGaugeMetric("RandomValue", time.Now().UnixNano()),
 	)
 
 	return metrics
 }
 
-// SendMetrics sends metrics to the server and returns a new metrics slice
-func SendMetrics(metrics []Metric, serverAddress string) ([]Metric, error) {
-	for _, metric := range metrics {
-		var url string
-		if !strings.HasPrefix(serverAddress, "http") {
-			url += "http://"
-		}
-		url += fmt.Sprintf("%s/update/%s/%s/%v", serverAddress, metric.Type, metric.Name, metric.Value)
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(nil))
-		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %v", err)
-		}
+func newGaugeMetric(metricName string, metricValue interface{}) shared.Metric {
+	var floatValue float64
 
-		req.Header.Set("Content-Type", "text/plain")
-		client := &http.Client{}
-		resp, err := client.Do(req)
+	switch metricValueTyped := metricValue.(type) {
+	case float64:
+		floatValue = metricValueTyped
+	case int64:
+		floatValue = float64(metricValueTyped)
+	case uint64:
+		floatValue = float64(metricValueTyped)
+	case uint32:
+		floatValue = float64(metricValueTyped)
+	default:
+		panic(fmt.Sprintf("invalid metric value type: %T", metricValue))
+	}
+
+	return shared.Metric{ID: metricName, MType: shared.Gauge, Value: &floatValue}
+}
+
+func newCounterMetric(metricName string, metricValue int64) shared.Metric {
+	return shared.Metric{ID: metricName, MType: shared.Counter, Delta: &metricValue}
+}
+
+// SendMetrics sends metrics to the server and returns a new metrics slice
+func SendMetrics(metrics []shared.Metric, serverAddress string) ([]shared.Metric, error) {
+	var url string
+	if !strings.HasPrefix(serverAddress, "http") {
+		url += "http://"
+	}
+	url += fmt.Sprintf("%s/update/", serverAddress)
+	client := &http.Client{}
+	var resp *http.Response
+
+	for _, metric := range metrics {
+		data, err := json.Marshal(metric)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal metric: %v", err)
+		}
+		err = retry.Do(
+			func() error {
+				r, err := client.Post(url, "application/json", bytes.NewBuffer(data))
+				if err != nil {
+					return err
+				}
+				defer r.Body.Close()
+				resp = r
+				return nil
+			},
+			retry.Attempts(2),
+			retry.Delay(time.Second),
+			retry.MaxJitter(500*time.Millisecond),
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to send metrics: %v", err)
 		}
@@ -78,7 +118,6 @@ func SendMetrics(metrics []Metric, serverAddress string) ([]Metric, error) {
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("received non-OK response while sending metrics: %s", resp.Status)
 		}
-		resp.Body.Close()
 	}
-	return []Metric{}, nil
+	return []shared.Metric{}, nil
 }

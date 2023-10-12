@@ -7,6 +7,8 @@ import (
 
 	"github.com/gonozov0/go-musthave-devops/internal/server/repository"
 
+	"github.com/gonozov0/go-musthave-devops/internal/shared"
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -30,8 +32,8 @@ func (h *Handler) getCounterValue(metricName string) (string, error) {
 	return valueStr, nil
 }
 
-// GetMetric is the HTTP handler for getting metrics.
-func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
+// GetMetricByURL is the HTTP handler for getting metrics.
+func (h *Handler) GetMetricByURL(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 
@@ -39,9 +41,9 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	var value string
 
 	switch metricType {
-	case Gauge:
+	case shared.Gauge:
 		value, err = h.getGaugeValue(metricName)
-	case Counter:
+	case shared.Counter:
 		value, err = h.getCounterValue(metricName)
 	default:
 		// Must be 400, return 501 because of autotests.

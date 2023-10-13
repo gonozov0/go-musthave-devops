@@ -41,7 +41,6 @@ jobs:
         uses: robinraju/release-downloader@v1.7
         with:
           repository: Yandex-Practicum/go-autotests
-          tag: refactor
           fileName: "*"
           out-file-path: .tools
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -52,9 +52,6 @@ func LoadConfig() (Config, error) {
 		}
 		config.RestoreFlag = boolEnvRestoreFlag
 	}
-	if envDatabaseDSN, exists := os.LookupEnv("DATABASE_DSN"); exists {
-		config.DatabaseDSN = envDatabaseDSN
-	}
 
 	flag.StringVar(&config.ServerAddress, "a", config.ServerAddress, "HTTP server endpoint address")
 	flag.Uint64Var(&config.StoreInterval, "i", config.StoreInterval, "Metrics store interval in seconds")
@@ -65,6 +62,11 @@ func LoadConfig() (Config, error) {
 	flag.Parse()
 	if len(flag.Args()) > 0 {
 		return config, errors.New("unexpected arguments provided")
+	}
+
+	// crunch because of metricstests where we must overwrite DatabaseDSN from env
+	if envDatabaseDSN, exists := os.LookupEnv("DATABASE_DSN"); exists {
+		config.DatabaseDSN = envDatabaseDSN
 	}
 
 	return config, nil

@@ -61,10 +61,7 @@ func TestUpdateMetricByBody(t *testing.T) {
 			body, err := json.Marshal(tc.metric)
 			assert.NoError(t, err, "Failed to marshal metric")
 
-			req, err := http.NewRequest(http.MethodPost, "/update/", bytes.NewBuffer(body))
-			assert.NoError(t, err, "Failed to create request")
-			req.Header.Set("Content-Type", "application/json")
-
+			req := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewBuffer(body))
 			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 

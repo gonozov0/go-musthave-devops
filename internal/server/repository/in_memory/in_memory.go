@@ -109,6 +109,29 @@ func (repo *inMemoryRepository) UpdateCounter(metricName string, value int64) (i
 	return newValue, nil
 }
 
+// UpdateGauges updates or sets a new gauge metrics with the given name and value.
+func (repo *inMemoryRepository) UpdateGauges(metrics []repository.GaugeMetric) ([]repository.GaugeMetric, error) {
+	repo.gaugeMu.Lock()
+	for _, metric := range metrics {
+		repo.gauges[metric.Name] = metric.Value
+	}
+	repo.gaugeMu.Unlock()
+	return metrics, nil
+}
+
+// UpdateCounters updates or sets a new counter metrics with the given name and value.
+func (repo *inMemoryRepository) UpdateCounters(metrics []repository.CounterMetric) ([]repository.CounterMetric, error) {
+	newMetrics := make([]repository.CounterMetric, 0, len(metrics))
+	repo.counterMu.Lock()
+	for _, metric := range metrics {
+		newValue := repo.counters[metric.Name] + metric.Value
+		repo.counters[metric.Name] = metric.Value
+		newMetrics = append(newMetrics, repository.CounterMetric{Name: metric.Name, Value: newValue})
+	}
+	repo.counterMu.Unlock()
+	return newMetrics, nil
+}
+
 // GetGauge return gauge metric by name.
 func (repo *inMemoryRepository) GetGauge(name string) (float64, error) {
 	repo.gaugeMu.RLock()

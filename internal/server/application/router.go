@@ -27,6 +27,7 @@ func NewRouter(repo repository.Repository) *chi.Mux {
 
 	router.Post("/update/{metricType}/{metricName}/{metricValue}", handler.UpdateMetricByURL)
 	router.Post("/update", handler.UpdateMetricByBody)
+	router.Post("/updates", handler.BatchUpdateMetrics)
 
 	return router
 }

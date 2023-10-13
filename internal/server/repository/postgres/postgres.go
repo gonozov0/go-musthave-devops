@@ -3,6 +3,10 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -23,8 +27,7 @@ func NewPGRepository(connectionString string) (repository.Repository, error) {
 		return nil, err
 	}
 
-	migrationsPath := "file://internal/server/repository/postgres/internal/migrations"
-	m, err := migrate.New(migrationsPath, connectionString)
+	m, err := migrate.New(getMigrationDirPath(), connectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +54,65 @@ func (r *pgRepository) UpdateGauge(metricName string, value float64) (float64, e
 		return 0, err
 	}
 	return value, nil
+}
+
+func (r *pgRepository) UpdateGauges(metrics []repository.GaugeMetric) ([]repository.GaugeMetric, error) {
+	if len(metrics) == 0 {
+		return make([]repository.GaugeMetric, 0), nil
+	}
+
+	// Name can be duplicated in slice, so we need to fix it
+	uniqueMetrics := make(map[string]float64, len(metrics))
+	for _, metric := range metrics {
+		uniqueMetrics[metric.Name] = metric.Value
+	}
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	var valueStrings []string
+	for metricName := range uniqueMetrics {
+		valueStrings = append(valueStrings, fmt.Sprintf("(:name%s, :value%s)", metricName, metricName))
+	}
+
+	queryStr := fmt.Sprintf(
+		"INSERT INTO gauges(name, value) VALUES %s ON CONFLICT(name) DO UPDATE SET value = EXCLUDED.value RETURNING name, value",
+		strings.Join(valueStrings, ","),
+	)
+
+	queryArgs := make(map[string]interface{})
+	for name, value := range uniqueMetrics {
+		queryArgs[fmt.Sprintf("name%s", name)] = name
+		queryArgs[fmt.Sprintf("value%s", name)] = value
+	}
+
+	rows, err := tx.NamedQuery(queryStr, queryArgs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute named query: %w", err)
+	}
+	defer rows.Close()
+
+	var updatedMetrics []repository.GaugeMetric
+	for rows.Next() {
+		var metric repository.GaugeMetric
+		if err := rows.StructScan(&metric); err != nil {
+			return nil, fmt.Errorf("failed to scan struct: %w", err)
+		}
+		updatedMetrics = append(updatedMetrics, metric)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during iteration over rows: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return updatedMetrics, nil
 }
 
 func (r *pgRepository) GetGauge(name string) (float64, error) {
@@ -90,6 +152,65 @@ func (r *pgRepository) UpdateCounter(metricName string, value int64) (int64, err
 	return newValue, nil
 }
 
+func (r *pgRepository) UpdateCounters(metrics []repository.CounterMetric) ([]repository.CounterMetric, error) {
+	if len(metrics) == 0 {
+		return make([]repository.CounterMetric, 0), nil
+	}
+
+	// Name can be duplicated in slice, so we need to fix it
+	uniqueMetrics := make(map[string]int64, len(metrics))
+	for _, metric := range metrics {
+		uniqueMetrics[metric.Name] += metric.Value
+	}
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	var valueStrings []string
+	for metricName := range uniqueMetrics {
+		valueStrings = append(valueStrings, fmt.Sprintf("(:name%s, :value%s)", metricName, metricName))
+	}
+
+	queryStr := fmt.Sprintf(
+		"INSERT INTO counters(name, value) VALUES %s ON CONFLICT(name) DO UPDATE SET value = counters.value + EXCLUDED.value RETURNING name, value",
+		strings.Join(valueStrings, ","),
+	)
+
+	queryArgs := make(map[string]interface{})
+	for name, value := range uniqueMetrics {
+		queryArgs[fmt.Sprintf("name%s", name)] = name
+		queryArgs[fmt.Sprintf("value%s", name)] = value
+	}
+
+	rows, err := tx.NamedQuery(queryStr, queryArgs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute named query: %w", err)
+	}
+	defer rows.Close()
+
+	var updatedMetrics []repository.CounterMetric
+	for rows.Next() {
+		var metric repository.CounterMetric
+		if err := rows.StructScan(&metric); err != nil {
+			return nil, fmt.Errorf("failed to scan struct: %w", err)
+		}
+		updatedMetrics = append(updatedMetrics, metric)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during iteration over rows: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return updatedMetrics, nil
+}
+
 func (r *pgRepository) GetCounter(name string) (int64, error) {
 	var value int64
 	err := r.db.Get(&value, `SELECT value FROM counters WHERE name = $1`, name)
@@ -119,4 +240,11 @@ func (r *pgRepository) DeleteGauge(name string) error {
 func (r *pgRepository) DeleteCounter(name string) error {
 	_, err := r.db.Exec(`DELETE FROM counters WHERE name = $1`, name)
 	return err
+}
+
+func getMigrationDirPath() string {
+	_, currentFilePath, _, _ := runtime.Caller(0)
+	currentDir := filepath.Dir(currentFilePath)
+	migrationsPath := filepath.Join(currentDir, "internal/migrations")
+	return "file://" + migrationsPath
 }

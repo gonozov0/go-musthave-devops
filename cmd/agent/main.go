@@ -29,6 +29,7 @@ func main() {
 			if err != nil {
 				log.Fatalf("Could not send metrics: %s", err.Error())
 			}
+			log.Infof("Sent %d metrics", len(metrics))
 		}
 	}
 }

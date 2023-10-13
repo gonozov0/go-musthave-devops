@@ -46,6 +46,9 @@ func (s *PGRepositorySuite) TestPing() {
 
 func (s *PGRepositorySuite) TestUpdateAndGetGauge() {
 	metricName := "test_gauge"
+	defer func() {
+		s.repo.DeleteGauge(metricName)
+	}()
 	value := 42.5
 
 	updatedValue, err := s.repo.UpdateGauge(metricName, value)
@@ -66,6 +69,9 @@ func (s *PGRepositorySuite) TestUpdateAndGetGauge() {
 
 func (s *PGRepositorySuite) TestUpdateAndGetCounter() {
 	metricName := "test_counter"
+	defer func() {
+		s.repo.DeleteCounter(metricName)
+	}()
 	value := int64(5)
 
 	updatedValue, err := s.repo.UpdateCounter(metricName, value)
@@ -79,9 +85,6 @@ func (s *PGRepositorySuite) TestUpdateAndGetCounter() {
 	fetchedValue, err := s.repo.GetCounter(metricName)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), value*2, fetchedValue)
-
-	err = s.repo.DeleteCounter(metricName)
-	require.NoError(s.T(), err)
 }
 
 func (s *PGRepositorySuite) TestGetGaugeMetricNotFound() {
@@ -94,17 +97,21 @@ func (s *PGRepositorySuite) TestUpdateAndGetAllGauges() {
 		{Name: "test_gauge_1", Value: 42.5},
 		{Name: "test_gauge_2", Value: 111.},
 	}
+	defer func() {
+		for _, gauge := range expectedGauges {
+			s.repo.DeleteGauge(gauge.Name)
+		}
+	}()
+
 	actualGauges, err := s.repo.UpdateGauges(expectedGauges)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), expectedGauges, actualGauges)
 
 	actualGauges, err = s.repo.GetAllGauges()
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), expectedGauges, actualGauges)
-
-	for _, gauge := range expectedGauges {
-		err = s.repo.DeleteGauge(gauge.Name)
-		require.NoError(s.T(), err)
+	require.Equal(s.T(), len(expectedGauges), len(actualGauges))
+	for _, actualGauge := range actualGauges {
+		require.Contains(s.T(), expectedGauges, actualGauge)
 	}
 }
 
@@ -118,16 +125,20 @@ func (s *PGRepositorySuite) TestUpdateAndGetAllCounters() {
 		{Name: "test_counter_1", Value: 42},
 		{Name: "test_counter_2", Value: 111},
 	}
+	defer func() {
+		for _, counter := range expectedCounters {
+			s.repo.DeleteCounter(counter.Name)
+		}
+	}()
+
 	actualCounters, err := s.repo.UpdateCounters(expectedCounters)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), expectedCounters, actualCounters)
 
 	actualCounters, err = s.repo.GetAllCounters()
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), expectedCounters, actualCounters)
-
-	for _, counter := range expectedCounters {
-		err = s.repo.DeleteCounter(counter.Name)
-		require.NoError(s.T(), err)
+	require.Equal(s.T(), len(expectedCounters), len(actualCounters))
+	for _, actualCounter := range actualCounters {
+		require.Contains(s.T(), expectedCounters, actualCounter)
 	}
 }

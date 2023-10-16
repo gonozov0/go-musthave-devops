@@ -9,13 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	filestorage "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory/internal/file_storage"
 )
 
 func TestLoadMetrics(t *testing.T) {
-	fileName := "/tmp/test_load_metrics.json"
+	fileName := "test_load_metrics.json"
+	defer os.Remove(fileName)
+
 	metrics := filestorage.Metrics{
 		Gauges: []filestorage.GaugeMetric{
 			{
@@ -29,45 +31,55 @@ func TestLoadMetrics(t *testing.T) {
 		},
 	}
 	bytes_, err := json.Marshal(metrics)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = os.WriteFile(fileName, bytes_, 0644)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	repo, err := NewInMemoryRepositoryWithFileStorage(context.Background(), &sync.WaitGroup{}, fileName, 0, true)
-	assert.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	repo, err := NewInMemoryRepositoryWithFileStorage(ctx, wg, fileName, 0, true)
+	require.NoError(t, err)
+
+	// for correct removal of test file
+	cancel()
+	wg.Wait()
 
 	gaugeMetric := metrics.Gauges[0]
 	gaugeValue, err := repo.GetGauge(gaugeMetric.Name)
-	assert.NoError(t, err)
-	assert.Equal(t, gaugeMetric.Value, gaugeValue)
+	require.NoError(t, err)
+	require.Equal(t, gaugeMetric.Value, gaugeValue)
 
 	counterMetric := metrics.Counters[0]
 	counterValue, err := repo.GetCounter(counterMetric.Name)
-	assert.NoError(t, err)
-	assert.Equal(t, counterMetric.Value, counterValue)
+	require.NoError(t, err)
+	require.Equal(t, counterMetric.Value, counterValue)
 }
 
 func TestSaveMetrics(t *testing.T) {
-	fileName := "/tmp/test_trigger_save.json"
+	fileName := "test_trigger_save.json"
+	defer os.Remove(fileName)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	repo, err := NewInMemoryRepositoryWithFileStorage(ctx, wg, fileName, 0, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	metricValue := int64(42)
 	metricID := "TestMetric"
 	_, err = repo.UpdateCounter(metricID, metricValue)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	time.Sleep(1 * time.Nanosecond)
+	time.Sleep(1 * time.Microsecond)
 	cancel()
 	wg.Wait()
 
 	bytes_, err := os.ReadFile(fileName)
-	assert.NoError(t, err)
-	assert.Equal(
+	require.NoError(t, err)
+	require.Equal(
 		t,
 		fmt.Sprintf(
 			"{\"Gauges\":[],\"Counters\":[{\"name\":\"%s\",\"value\":%d}]}",

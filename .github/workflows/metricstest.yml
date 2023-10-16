@@ -214,6 +214,7 @@ jobs:
           SERVER_PORT=$(random unused-port)
           ADDRESS="localhost:${SERVER_PORT}"
           TEMP_FILE=$(random tempfile)
+          REPORT_INTERVAL=15
           metricstest -test.v -test.run=^TestIteration7$ \
             -agent-binary-path=cmd/agent/agent \
             -binary-path=cmd/server/server \

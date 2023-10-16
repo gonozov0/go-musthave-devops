@@ -136,7 +136,7 @@ func SendMetrics(metrics []shared.Metric, serverAddress string) ([]shared.Metric
 			}
 			return nil
 		},
-		retry.Attempts(3),
+		retry.Attempts(5),
 		retry.Delay(time.Second),
 		retry.DelayType(retry.BackOffDelay),
 	)

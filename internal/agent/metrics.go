@@ -136,9 +136,9 @@ func SendMetrics(metrics []shared.Metric, serverAddress string) ([]shared.Metric
 			}
 			return nil
 		},
-		retry.Attempts(2),
+		retry.Attempts(3),
 		retry.Delay(time.Second),
-		retry.MaxJitter(500*time.Millisecond),
+		retry.DelayType(retry.BackOffDelay),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send metrics: %v", err)

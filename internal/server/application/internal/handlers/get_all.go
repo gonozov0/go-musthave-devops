@@ -20,14 +20,14 @@ func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
-	fmt.Fprint(w, "<html><body><h1>Metrics</h1><ul>")
+	fmt.Fprint(w, "<html><body><h1>Metrics</h1>")
 	fmt.Fprint(w, "<h2>Gauges</h2><ul>")
 	for _, metric := range gaugeMetrics {
 		fmt.Fprintf(w, "<li>%s: %v</li>", metric.Name, metric.Value)
 	}
 	fmt.Fprint(w, "</ul>")
 
-	fmt.Fprint(w, "</ul><h2>Counters</h2><ul>")
+	fmt.Fprint(w, "<h2>Counters</h2><ul>")
 	for _, metric := range counterMetrics {
 		fmt.Fprintf(w, "<li>%s: %v</li>", metric.Name, metric.Value)
 	}

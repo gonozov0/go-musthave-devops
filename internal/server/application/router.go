@@ -18,6 +18,8 @@ func NewRouter(repo repository.Repository) *chi.Mux {
 	router.Use(chiMiddleware.StripSlashes)
 	router.Use(middleware.GzipMiddleware)
 
+	router.Get("/ping", handler.Ping)
+
 	router.Get("/", handler.GetAllMetrics)
 
 	router.Get("/value/{metricType}/{metricName}", handler.GetMetricByURL)
@@ -25,6 +27,7 @@ func NewRouter(repo repository.Repository) *chi.Mux {
 
 	router.Post("/update/{metricType}/{metricName}/{metricValue}", handler.UpdateMetricByURL)
 	router.Post("/update", handler.UpdateMetricByBody)
+	router.Post("/updates", handler.BatchUpdateMetrics)
 
 	return router
 }

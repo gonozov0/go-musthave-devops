@@ -12,7 +12,7 @@ import (
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
 	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
 	"github.com/gonozov0/go-musthave-devops/internal/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGZipMiddleware(t *testing.T) {
@@ -23,7 +23,7 @@ func TestGZipMiddleware(t *testing.T) {
 	testMetric := shared.Metric{ID: "temperature", MType: shared.Gauge, Value: &testFloat}
 
 	body, err := json.Marshal(testMetric)
-	assert.NoError(t, err, "Failed to marshal metric")
+	require.NoError(t, err, "Failed to marshal metric")
 
 	var b bytes.Buffer
 	gz := gzip.NewWriter(&b)
@@ -31,24 +31,24 @@ func TestGZipMiddleware(t *testing.T) {
 	_ = gz.Close()
 
 	req, err := http.NewRequest(http.MethodPost, "/update/", &b)
-	assert.NoError(t, err, "Failed to create request")
+	require.NoError(t, err, "Failed to create request")
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Accept-Encoding", "gzip")
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
-	assert.Equal(t, "gzip", rr.Header().Get("Content-Encoding"))
+	require.Equal(t, "gzip", rr.Header().Get("Content-Encoding"))
 
 	gr, err := gzip.NewReader(rr.Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	respBody, err := io.ReadAll(gr)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	resultMetric := shared.Metric{}
 	err = json.Unmarshal(respBody, &resultMetric)
-	assert.NoError(t, err, "Failed to unmarshal metric")
-	assert.Equal(t, testMetric.ID, resultMetric.ID, "Unexpected metric ID")
-	assert.Equal(t, testMetric.MType, resultMetric.MType, "Unexpected metric type")
-	assert.Equal(t, *testMetric.Value, *resultMetric.Value, "Unexpected metric value")
+	require.NoError(t, err, "Failed to unmarshal metric")
+	require.Equal(t, testMetric.ID, resultMetric.ID, "Unexpected metric ID")
+	require.Equal(t, testMetric.MType, resultMetric.MType, "Unexpected metric type")
+	require.Equal(t, *testMetric.Value, *resultMetric.Value, "Unexpected metric value")
 }

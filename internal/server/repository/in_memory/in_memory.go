@@ -1,4 +1,4 @@
-package inmemory
+package repository
 
 import (
 	"context"
@@ -28,7 +28,6 @@ func NewInMemoryRepository() repository.Repository {
 		gauges:   make(map[string]float64),
 		counters: make(map[string]int64),
 	}
-
 }
 
 // NewInMemoryRepositoryWithFileStorage creates a new in-memory repository with file storage capability.
@@ -87,6 +86,11 @@ func NewInMemoryRepositoryWithFileStorage(
 	return &repo, nil
 }
 
+// Ping checks the connection to the repository.
+func (repo *inMemoryRepository) Ping() error {
+	return nil
+}
+
 // UpdateGauge updates or sets a new gauge metric with the given name and value.
 func (repo *inMemoryRepository) UpdateGauge(metricName string, value float64) (float64, error) {
 	repo.gaugeMu.Lock()
@@ -102,6 +106,29 @@ func (repo *inMemoryRepository) UpdateCounter(metricName string, value int64) (i
 	repo.counters[metricName] = newValue
 	repo.counterMu.Unlock()
 	return newValue, nil
+}
+
+// UpdateGauges updates or sets a new gauge metrics with the given name and value.
+func (repo *inMemoryRepository) UpdateGauges(metrics []repository.GaugeMetric) ([]repository.GaugeMetric, error) {
+	repo.gaugeMu.Lock()
+	for _, metric := range metrics {
+		repo.gauges[metric.Name] = metric.Value
+	}
+	repo.gaugeMu.Unlock()
+	return metrics, nil
+}
+
+// UpdateCounters updates or sets a new counter metrics with the given name and value.
+func (repo *inMemoryRepository) UpdateCounters(metrics []repository.CounterMetric) ([]repository.CounterMetric, error) {
+	newMetrics := make([]repository.CounterMetric, 0, len(metrics))
+	repo.counterMu.Lock()
+	for _, metric := range metrics {
+		newValue := repo.counters[metric.Name] + metric.Value
+		repo.counters[metric.Name] = metric.Value
+		newMetrics = append(newMetrics, repository.CounterMetric{Name: metric.Name, Value: newValue})
+	}
+	repo.counterMu.Unlock()
+	return newMetrics, nil
 }
 
 // GetGauge return gauge metric by name.
@@ -150,6 +177,22 @@ func (repo *inMemoryRepository) GetAllCounters() ([]repository.CounterMetric, er
 	}
 
 	return counters, nil
+}
+
+// DeleteGauge deletes gauge metric by name.
+func (repo *inMemoryRepository) DeleteGauge(name string) error {
+	repo.gaugeMu.Lock()
+	delete(repo.gauges, name)
+	repo.gaugeMu.Unlock()
+	return nil
+}
+
+// DeleteCounter deletes counter metric by name.
+func (repo *inMemoryRepository) DeleteCounter(name string) error {
+	repo.counterMu.Lock()
+	delete(repo.counters, name)
+	repo.counterMu.Unlock()
+	return nil
 }
 
 func (repo *inMemoryRepository) startSaveMetricsInBackground(ctx context.Context, wg *sync.WaitGroup) {

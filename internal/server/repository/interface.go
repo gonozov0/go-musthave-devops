@@ -6,6 +6,10 @@ type Repository interface {
 	UpdateGauge(metricName string, value float64) (float64, error)
 	// UpdateCounter updates or adds a new counter metric with the given name and value.
 	UpdateCounter(metricName string, value int64) (int64, error)
+	// UpdateGauges updates or adds a new gauge metrics with the given name and value.
+	UpdateGauges(metrics []GaugeMetric) ([]GaugeMetric, error)
+	// UpdateCounters updates or adds a new counter metrics with the given name and value.
+	UpdateCounters(metrics []CounterMetric) ([]CounterMetric, error)
 	// GetGauge return gauge metric by name.
 	GetGauge(name string) (float64, error)
 	// GetCounter return counter metric by name.
@@ -14,4 +18,10 @@ type Repository interface {
 	GetAllGauges() ([]GaugeMetric, error)
 	// GetAllCounters returns all counter metrics.
 	GetAllCounters() ([]CounterMetric, error)
+	// DeleteGauge deletes gauge metric by name.
+	DeleteGauge(name string) error
+	// DeleteCounter deletes counter metric by name.
+	DeleteCounter(name string) error
+	// Ping checks the connection to the repository.
+	Ping() error
 }

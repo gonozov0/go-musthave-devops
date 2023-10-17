@@ -1,11 +1,13 @@
 package agent
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/gonozov0/go-musthave-devops/internal/server/application"
+	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/gonozov0/go-musthave-devops/internal/shared"
 )
@@ -13,24 +15,24 @@ import (
 func TestCollectMetrics(t *testing.T) {
 	metrics := CollectMetrics()
 
-	assert.NotEmpty(t, metrics)
+	require.NotEmpty(t, metrics)
 
 	for _, metric := range metrics {
-		assert.NotEmpty(t, metric.ID)
+		require.NotEmpty(t, metric.ID)
 		if metric.ID == "PollCount" {
-			assert.Equal(t, "counter", metric.MType)
-			assert.NotNil(t, metric.Delta)
+			require.Equal(t, "counter", metric.MType)
+			require.NotNil(t, metric.Delta)
 			continue
 		}
-		assert.Equal(t, "gauge", metric.MType)
-		assert.NotNil(t, metric.Value)
+		require.Equal(t, "gauge", metric.MType)
+		require.NotNil(t, metric.Value)
 	}
 }
 
 func TestSendMetrics(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
+	repo := repository.NewInMemoryRepository()
+	router := application.NewRouter(repo)
+	server := httptest.NewServer(router)
 	defer server.Close()
 
 	testFloat := 42.0
@@ -43,7 +45,6 @@ func TestSendMetrics(t *testing.T) {
 
 	newMetrics, err := SendMetrics(metrics, server.URL)
 
-	assert.NoError(t, err)
-	assert.Empty(t, newMetrics)
-
+	require.NoError(t, err)
+	require.Empty(t, newMetrics)
 }

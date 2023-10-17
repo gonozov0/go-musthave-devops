@@ -2,8 +2,12 @@ package agent
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"runtime"
 	"strings"
@@ -88,36 +92,69 @@ func SendMetrics(metrics []shared.Metric, serverAddress string) ([]shared.Metric
 	if !strings.HasPrefix(serverAddress, "http") {
 		url += "http://"
 	}
-	url += fmt.Sprintf("%s/update/", serverAddress)
+	url += fmt.Sprintf("%s/updates/", serverAddress)
+
+	var (
+		statusCode int
+		body       []byte
+		buffer     bytes.Buffer
+	)
 	client := &http.Client{}
-	var resp *http.Response
+	writer := gzip.NewWriter(&buffer)
+	encoder := json.NewEncoder(writer)
 
-	for _, metric := range metrics {
-		data, err := json.Marshal(metric)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal metric: %v", err)
-		}
-		err = retry.Do(
-			func() error {
-				r, err := client.Post(url, "application/json", bytes.NewBuffer(data))
-				if err != nil {
-					return err
-				}
-				defer r.Body.Close()
-				resp = r
-				return nil
-			},
-			retry.Attempts(2),
-			retry.Delay(time.Second),
-			retry.MaxJitter(500*time.Millisecond),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to send metrics: %v", err)
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("received non-OK response while sending metrics: %s", resp.Status)
-		}
+	if err := encoder.Encode(metrics); err != nil {
+		return nil, fmt.Errorf("failed to encode metrics to JSON: %v", err)
 	}
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close gzip writer: %v", err)
+	}
+	data := buffer.Bytes()
+
+	err := retry.Do(
+		func() error {
+			req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
+			if err != nil {
+				return retry.Unrecoverable(err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Accept", "application/json")
+			req.Header.Set("Content-Encoding", "gzip")
+			req.Header.Set("Accept-Encoding", "gzip")
+
+			r, err := client.Do(req)
+			if err != nil {
+				var netErr net.Error
+				if (errors.As(err, &netErr) && netErr.Timeout()) ||
+					strings.Contains(err.Error(), "EOF") ||
+					strings.Contains(err.Error(), "connection reset by peer") {
+					return err // retry only network errors
+				}
+				return retry.Unrecoverable(err)
+			}
+			defer r.Body.Close()
+			statusCode = r.StatusCode
+			body, err = io.ReadAll(r.Body)
+			if err != nil {
+				return retry.Unrecoverable(err)
+			}
+			return nil
+		},
+		retry.Attempts(3),
+		retry.Delay(time.Second),
+		retry.DelayType(retry.BackOffDelay),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send metrics: %v", err)
+	}
+
+	if statusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"received non-OK response while sending metrics: %d, error: %s",
+			statusCode,
+			string(body),
+		)
+	}
+
 	return []shared.Metric{}, nil
 }

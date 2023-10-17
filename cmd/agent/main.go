@@ -25,6 +25,7 @@ func main() {
 		case <-collectTicker.C:
 			metrics = append(metrics, agent.CollectMetrics()...)
 		case <-sendTicker.C:
+			log.Infof("Sending %d metrics", len(metrics))
 			metrics, err = agent.SendMetrics(metrics, cfg.ServerAddress)
 			if err != nil {
 				log.Fatalf("Could not send metrics: %s", err.Error())

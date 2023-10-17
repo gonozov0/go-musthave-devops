@@ -9,7 +9,7 @@ import (
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
 	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
 	"github.com/gonozov0/go-musthave-devops/internal/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetMetricByURL(t *testing.T) {
@@ -45,11 +45,11 @@ func TestGetMetricByURL(t *testing.T) {
 			router.ServeHTTP(recorder, req)
 			strBody := recorder.Body.String()
 
-			assert.Equal(t, tc.expectedCode, recorder.Code, strBody)
+			require.Equal(t, tc.expectedCode, recorder.Code, strBody)
 
 			if tc.expectedCode == http.StatusOK {
 
-				assert.Equal(t, tc.expectedVal, strBody)
+				require.Equal(t, tc.expectedVal, strBody)
 			}
 		})
 	}

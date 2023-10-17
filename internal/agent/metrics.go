@@ -94,12 +94,12 @@ func SendMetrics(metrics []shared.Metric, serverAddress string) ([]shared.Metric
 	}
 	url += fmt.Sprintf("%s/updates/", serverAddress)
 
-	client := &http.Client{}
 	var (
 		statusCode int
 		body       []byte
 		buffer     bytes.Buffer
 	)
+	client := &http.Client{}
 	writer := gzip.NewWriter(&buffer)
 	encoder := json.NewEncoder(writer)
 
@@ -109,22 +109,26 @@ func SendMetrics(metrics []shared.Metric, serverAddress string) ([]shared.Metric
 	if err := writer.Close(); err != nil {
 		return nil, fmt.Errorf("failed to close gzip writer: %v", err)
 	}
+	data := buffer.Bytes()
 
 	err := retry.Do(
 		func() error {
-			req, err := http.NewRequest(http.MethodPost, url, &buffer)
+			req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 			if err != nil {
 				return retry.Unrecoverable(err)
 			}
 			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Accept", "application/json")
 			req.Header.Set("Content-Encoding", "gzip")
 			req.Header.Set("Accept-Encoding", "gzip")
 
 			r, err := client.Do(req)
 			if err != nil {
 				var netErr net.Error
-				if errors.As(err, &netErr) && netErr.Timeout() {
-					return err // retry only on timeout network errors
+				if (errors.As(err, &netErr) && netErr.Timeout()) ||
+					strings.Contains(err.Error(), "EOF") ||
+					strings.Contains(err.Error(), "connection reset by peer") {
+					return err // retry only network errors
 				}
 				return retry.Unrecoverable(err)
 			}
@@ -136,7 +140,7 @@ func SendMetrics(metrics []shared.Metric, serverAddress string) ([]shared.Metric
 			}
 			return nil
 		},
-		retry.Attempts(5),
+		retry.Attempts(3),
 		retry.Delay(time.Second),
 		retry.DelayType(retry.BackOffDelay),
 	)

@@ -28,7 +28,6 @@ func NewInMemoryRepository() repository.Repository {
 		gauges:   make(map[string]float64),
 		counters: make(map[string]int64),
 	}
-
 }
 
 // NewInMemoryRepositoryWithFileStorage creates a new in-memory repository with file storage capability.

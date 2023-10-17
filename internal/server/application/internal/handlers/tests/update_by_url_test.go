@@ -9,7 +9,7 @@ import (
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
 	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
 	"github.com/gonozov0/go-musthave-devops/internal/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUpdateMetricByURL(t *testing.T) {
@@ -59,21 +59,21 @@ func TestUpdateMetricByURL(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			router.ServeHTTP(recorder, req)
 
-			assert.Equal(t, tc.expectedCode, recorder.Code)
+			require.Equal(t, tc.expectedCode, recorder.Code)
 
 			if tc.expectedCode == http.StatusOK {
 				switch tc.metricType {
 				case shared.Gauge:
 					gauge, err := repo.GetGauge(tc.metricName)
-					assert.NoError(t, err)
-					assert.Equal(t, tc.metricValue, gauge)
+					require.NoError(t, err)
+					require.Equal(t, tc.metricValue, gauge)
 				case shared.Counter:
 					counter, err := repo.GetCounter(tc.metricName)
-					assert.NoError(t, err)
-					assert.Equal(t, tc.metricValue, counter)
+					require.NoError(t, err)
+					require.Equal(t, tc.metricValue, counter)
 				}
 			} else {
-				assert.Equal(t, tc.expectedErr, recorder.Body.String())
+				require.Equal(t, tc.expectedErr, recorder.Body.String())
 			}
 		})
 	}

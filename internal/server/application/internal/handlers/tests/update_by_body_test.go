@@ -10,7 +10,7 @@ import (
 	"github.com/gonozov0/go-musthave-devops/internal/server/application"
 	repository "github.com/gonozov0/go-musthave-devops/internal/server/repository/in_memory"
 	"github.com/gonozov0/go-musthave-devops/internal/shared"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUpdateMetricByBody(t *testing.T) {
@@ -59,30 +59,30 @@ func TestUpdateMetricByBody(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			body, err := json.Marshal(tc.metric)
-			assert.NoError(t, err, "Failed to marshal metric")
+			require.NoError(t, err, "Failed to marshal metric")
 
 			req := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewBuffer(body))
 			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 
-			assert.Equal(t, tc.expectedCode, rr.Code, "Unexpected status code")
+			require.Equal(t, tc.expectedCode, rr.Code, "Unexpected status code")
 
 			if tc.expectedErr != "" {
 				respBody := rr.Body.String()
-				assert.Contains(t, respBody, tc.expectedErr, "Response body does not contain expected error message")
+				require.Contains(t, respBody, tc.expectedErr, "Response body does not contain expected error message")
 				return
 			}
 
 			resultMetric := shared.Metric{}
 			err = json.Unmarshal(rr.Body.Bytes(), &resultMetric)
-			assert.NoError(t, err, "Failed to unmarshal metric")
-			assert.Equal(t, tc.metric.ID, resultMetric.ID, "Unexpected metric ID")
-			assert.Equal(t, tc.metric.MType, resultMetric.MType, "Unexpected metric type")
+			require.NoError(t, err, "Failed to unmarshal metric")
+			require.Equal(t, tc.metric.ID, resultMetric.ID, "Unexpected metric ID")
+			require.Equal(t, tc.metric.MType, resultMetric.MType, "Unexpected metric type")
 			if tc.metric.Value != nil {
-				assert.Equal(t, *tc.metric.Value, *resultMetric.Value, "Unexpected metric value")
+				require.Equal(t, *tc.metric.Value, *resultMetric.Value, "Unexpected metric value")
 			}
 			if tc.metric.Delta != nil {
-				assert.Equal(t, *tc.metric.Delta, *resultMetric.Delta, "Unexpected metric delta")
+				require.Equal(t, *tc.metric.Delta, *resultMetric.Delta, "Unexpected metric delta")
 			}
 		})
 	}

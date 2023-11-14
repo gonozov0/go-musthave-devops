@@ -14,7 +14,7 @@ import (
 
 // getGaugeValue returns the string value of the gauge metric.
 func (h *Handler) getGaugeValue(metricName string) (string, error) {
-	value, err := h.Repo.GetGauge(metricName)
+	value, err := h.repo.GetGauge(metricName)
 	if err != nil {
 		return "", err
 	}
@@ -24,7 +24,7 @@ func (h *Handler) getGaugeValue(metricName string) (string, error) {
 
 // getCounterValue returns the string value of the counter metric.
 func (h *Handler) getCounterValue(metricName string) (string, error) {
-	value, err := h.Repo.GetCounter(metricName)
+	value, err := h.repo.GetCounter(metricName)
 	if err != nil {
 		return "", err
 	}

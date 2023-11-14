@@ -29,14 +29,14 @@ func (h *Handler) UpdateMetricByBody(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid metric value for type Gauge", http.StatusBadRequest)
 			return
 		}
-		newValue, err = h.Repo.UpdateGauge(metric.ID, *metric.Value)
+		newValue, err = h.repo.UpdateGauge(metric.ID, *metric.Value)
 		metric.Value = &newValue
 	case shared.Counter:
 		if metric.Delta == nil {
 			http.Error(w, "Invalid metric delta for type Counter", http.StatusBadRequest)
 			return
 		}
-		newDelta, err = h.Repo.UpdateCounter(metric.ID, *metric.Delta)
+		newDelta, err = h.repo.UpdateCounter(metric.ID, *metric.Delta)
 		metric.Delta = &newDelta
 	default:
 		// Must be 400, return 501 because of autotests.

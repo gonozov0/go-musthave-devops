@@ -45,13 +45,13 @@ func (h *Handler) BatchUpdateMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	newGauges, err := h.Repo.UpdateGauges(updateGauges)
+	newGauges, err := h.repo.UpdateGauges(updateGauges)
 	if err != nil {
 		log.Errorf("failed to update gauges: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	newCounters, err := h.Repo.UpdateCounters(updateCounters)
+	newCounters, err := h.repo.UpdateCounters(updateCounters)
 	if err != nil {
 		log.Errorf("failed to update counters: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

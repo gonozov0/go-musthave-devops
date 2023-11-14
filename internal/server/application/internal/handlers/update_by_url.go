@@ -27,7 +27,7 @@ func (h *Handler) UpdateMetricByURL(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid float metricValue", http.StatusBadRequest)
 			return
 		}
-		_, err = h.Repo.UpdateGauge(metricName, value)
+		_, err = h.repo.UpdateGauge(metricName, value)
 	case shared.Counter:
 		var value int64
 		value, err = strconv.ParseInt(metricValue, 10, 64)
@@ -35,7 +35,7 @@ func (h *Handler) UpdateMetricByURL(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid integer metricValue", http.StatusBadRequest)
 			return
 		}
-		_, err = h.Repo.UpdateCounter(metricName, value)
+		_, err = h.repo.UpdateCounter(metricName, value)
 	default:
 		// Must be 400, return 501 because of autotests.
 		http.Error(w, "Unknown metric type", http.StatusNotImplemented)

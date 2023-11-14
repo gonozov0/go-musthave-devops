@@ -27,10 +27,10 @@ func (h *Handler) GetMetricByBody(w http.ResponseWriter, r *http.Request) {
 
 	switch metric.MType {
 	case shared.Gauge:
-		gaugeValue, err = h.Repo.GetGauge(metric.ID)
+		gaugeValue, err = h.repo.GetGauge(metric.ID)
 		metric.Value = &gaugeValue
 	case shared.Counter:
-		counterValue, err = h.Repo.GetCounter(metric.ID)
+		counterValue, err = h.repo.GetCounter(metric.ID)
 		metric.Delta = &counterValue
 	default:
 		// Must be 400, return 501 because of autotests.

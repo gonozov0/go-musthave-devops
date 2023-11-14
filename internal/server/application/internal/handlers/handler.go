@@ -6,12 +6,12 @@ import (
 
 // Handler is a struct that holds the repository to update metrics.
 type Handler struct {
-	Repo repository.Repository
+	repo repository.Repository
 }
 
 // NewHandler constructs a new MetricsHandler.
 func NewHandler(repo repository.Repository) *Handler {
 	return &Handler{
-		Repo: repo,
+		repo: repo,
 	}
 }

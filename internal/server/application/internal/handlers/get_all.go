@@ -6,12 +6,12 @@ import (
 )
 
 func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
-	gaugeMetrics, err := h.Repo.GetAllGauges()
+	gaugeMetrics, err := h.repo.GetAllGauges()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	counterMetrics, err := h.Repo.GetAllCounters()
+	counterMetrics, err := h.repo.GetAllCounters()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
